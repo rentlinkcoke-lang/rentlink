@@ -1,0 +1,265 @@
+// Keja — self-reconciling property management for the Kenyan market.
+// Spine: Property -> Unit -> Tenant -> Lease -> Invoice -> Payment -> Reconciliation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// The landlord / property manager account.
+model Landlord {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  businessName String?
+  phone        String?
+  // Safaricom Paybill shortcode this landlord collects rent into.
+  paybill      String?
+  // Onfon Sender ID to send SMS under (falls back to ONFON_SENDER_ID env).
+  smsSenderId  String?
+  // Which channels to notify tenants on. WhatsApp is off until a WABA is ready.
+  smsOn        Boolean    @default(true)
+  whatsappOn   Boolean    @default(false)
+  emailOn      Boolean    @default(true)
+  // Daraja (M-Pesa) API credentials for this landlord's own paybill. Model A:
+  // money flows straight to the landlord — we only initiate STK & reconcile.
+  // Secret + passkey are stored encrypted (see lib/crypto.ts).
+  darajaConsumerKey    String?
+  darajaConsumerSecret String?
+  darajaPasskey        String?
+  darajaEnv            String    @default("sandbox") // sandbox | production
+  mpesaConnectedAt     DateTime?
+  // Keja's own subscription billing (per-unit SaaS fee).
+  billingStatus        String    @default("trialing") // trialing | active | past_due | canceled
+  trialEndsAt          DateTime?
+  createdAt    DateTime   @default(now())
+
+  stkRequests      StkRequest[]
+  platformInvoices PlatformInvoice[]
+
+  properties   Property[]
+  tenants      Tenant[]
+  payments     Payment[]
+}
+
+model Property {
+  id          String   @id @default(cuid())
+  landlordId  String
+  landlord    Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  name        String
+  // Short code used as the prefix of every unit's payment reference, e.g. "BLOOM".
+  code        String
+  location    String?
+  createdAt   DateTime @default(now())
+
+  units       Unit[]
+  expenses    Expense[]
+
+  @@unique([landlordId, code])
+}
+
+model Unit {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  label      String   // e.g. "B4", "Shop 2", "House 12"
+  // THE KILLER FEATURE: unique payment reference. Tenant enters this as the
+  // M-Pesa account number and the platform instantly knows unit -> tenant -> invoice.
+  payRef     String   @unique
+  rent       Int      // monthly rent in KES
+  bedrooms   Int?
+  createdAt  DateTime @default(now())
+
+  leases     Lease[]
+  invites    Invite[]
+
+  @@unique([propertyId, label])
+}
+
+// A self-service onboarding link for a vacant unit. The tenant opens it and
+// fills in their own details, which creates the tenant + lease.
+model Invite {
+  id         String    @id @default(cuid())
+  token      String    @unique
+  landlordId String
+  unitId     String
+  unit       Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  status     String    @default("pending") // pending | accepted | expired
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+  expiresAt  DateTime?
+
+  @@index([unitId])
+}
+
+model Tenant {
+  id         String   @id @default(cuid())
+  landlordId String
+  landlord   Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  name       String
+  phone      String   // M-Pesa number, format 2547XXXXXXXX
+  email      String?
+  createdAt  DateTime @default(now())
+
+  leases     Lease[]
+}
+
+model Lease {
+  id         String    @id @default(cuid())
+  unitId     String
+  unit       Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  startDate  DateTime
+  endDate    DateTime?
+  rent       Int       // snapshot of rent at lease signing (KES)
+  deposit    Int       @default(0)
+  status     String    @default("active") // active | ended
+  createdAt  DateTime  @default(now())
+
+  invoices   Invoice[]
+}
+
+model Invoice {
+  id         String    @id @default(cuid())
+  leaseId    String
+  lease      Lease     @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  // First day of the billing month this invoice covers.
+  periodYear  Int
+  periodMonth Int      // 1-12
+  type       String    @default("rent") // rent | water | electricity | other
+  amount     Int       // KES billed
+  amountPaid Int       @default(0)
+  dueDate    DateTime
+  status     String    @default("pending") // pending | partial | paid | overdue
+  createdAt  DateTime  @default(now())
+
+  allocations Allocation[]
+
+  @@index([leaseId])
+}
+
+// A recorded M-Pesa payment (C2B). Comes in via the confirmation webhook.
+model Payment {
+  id           String   @id @default(cuid())
+  landlordId   String
+  landlord     Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  mpesaCode    String   @unique // e.g. "SGH7X8Y9Z0"
+  amount       Int      // KES received
+  amountUnallocated Int  // KES not yet applied to invoices (for suspense / credit)
+  payRef       String   // the account number the tenant typed
+  payerPhone   String
+  payerName    String?
+  status       String   @default("unmatched") // matched | partial | unmatched
+  raw          String?  // raw webhook JSON for audit
+  receivedAt   DateTime @default(now())
+
+  allocations  Allocation[]
+
+  @@index([landlordId])
+  @@index([payRef])
+}
+
+// Links a payment to the invoice(s) it settled — the reconciliation ledger.
+model Allocation {
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoiceId  String
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount     Int
+  createdAt  DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+// A receipt "sent" to the tenant (WhatsApp/SMS). Recorded for the demo.
+model Receipt {
+  id         String   @id @default(cuid())
+  paymentId  String
+  channel    String   @default("whatsapp")
+  toPhone    String
+  body       String
+  createdAt  DateTime @default(now())
+}
+
+// Every outbound message (SMS now; email/WhatsApp later) — the delivery log.
+model MessageLog {
+  id         String   @id @default(cuid())
+  landlordId String
+  channel    String   // sms | email | whatsapp
+  kind       String   // invoice | receipt | reminder | manual
+  toPhone    String?
+  toEmail    String?
+  toName     String?
+  subject    String?  // email subject line
+  body       String
+  status     String   // sent | failed | simulated | queued
+  providerId String?  // Onfon MessageId
+  error      String?
+  tenantId   String?
+  invoiceId  String?
+  paymentId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([landlordId])
+}
+
+// An STK Push (request-to-pay) sent to a tenant's phone. Correlates Safaricom's
+// async callback (by CheckoutRequestID) back to the lease it was raised for.
+model StkRequest {
+  id                String   @id @default(cuid())
+  landlordId        String
+  landlord          Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  leaseId           String?
+  unitPayRef        String
+  tenantName        String?
+  tenantPhone       String
+  amount            Int
+  checkoutRequestId String?
+  merchantRequestId String?
+  status            String   @default("pending") // pending | success | failed | simulated
+  resultCode        String?
+  resultDesc        String?
+  mpesaReceipt      String?
+  createdAt         DateTime @default(now())
+
+  @@index([landlordId])
+  @@index([checkoutRequestId])
+}
+
+// Keja's monthly SaaS charge to a landlord: (active units) x (tiered per-unit rate).
+// This is the platform's OWN revenue — distinct from tenant rent.
+model PlatformInvoice {
+  id                String   @id @default(cuid())
+  landlordId        String
+  landlord          Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  periodYear        Int
+  periodMonth       Int
+  unitCount         Int
+  unitRate          Int      // KES per unit for this invoice's tier
+  amount            Int      // unitCount * unitRate
+  status            String   @default("open") // open | paid | void
+  checkoutRequestId String?
+  mpesaReceipt      String?
+  issuedAt          DateTime @default(now())
+  paidAt            DateTime?
+
+  @@unique([landlordId, periodYear, periodMonth])
+  @@index([landlordId])
+}
+
+model Expense {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  category   String   // repairs | utilities | security | management | other
+  amount     Int
+  note       String?
+  incurredAt DateTime @default(now())
+}
