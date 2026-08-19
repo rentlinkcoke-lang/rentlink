@@ -88,8 +88,9 @@ Add to `vercel.json` (create it) — hit the scheduler endpoints with the secret
   ]
 }
 ```
-Vercel Cron can't send custom headers, so also accept the secret via query — or
-gate by Vercel's cron header. Simplest: append `?key=$CRON_SECRET` to each path.
+Vercel automatically sends `Authorization: Bearer $CRON_SECRET` on cron requests
+when the `CRON_SECRET` env var is set — `src/lib/cron.ts` already accepts that header,
+so no secret goes in `vercel.json`. (`vercel.json` is committed with the schedules.)
 
 ---
 
