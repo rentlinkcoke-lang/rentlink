@@ -9,11 +9,9 @@
 const ONFON_URL = "https://api.onfonmedia.co.ke/v1/sms/SendBulkSMS";
 
 export function onfonConfigured(): boolean {
-  return Boolean(
-    process.env.ONFON_API_KEY &&
-      process.env.ONFON_CLIENT_ID &&
-      process.env.ONFON_ACCESS_KEY
-  );
+  // AccessKey is OPTIONAL on Onfon (many accounts don't issue one); the ApiKey +
+  // ClientId in the body authenticate the request. Matches the working Harakisha setup.
+  return Boolean(process.env.ONFON_API_KEY && process.env.ONFON_CLIENT_ID);
 }
 
 export interface SmsResult {
@@ -35,7 +33,6 @@ export async function onfonSend(opts: {
   text: string;
   senderId?: string;
 }): Promise<SmsResult> {
-  const AccessKey = process.env.ONFON_ACCESS_KEY!;
   const payload = {
     SenderId: opts.senderId || process.env.ONFON_SENDER_ID || "ONFON",
     ApiKey: process.env.ONFON_API_KEY,
@@ -46,9 +43,11 @@ export async function onfonSend(opts: {
   };
 
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (process.env.ONFON_ACCESS_KEY) headers.AccessKey = process.env.ONFON_ACCESS_KEY;
     const res = await fetch(ONFON_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", AccessKey },
+      headers,
       body: JSON.stringify(payload),
     });
     const json = (await res.json().catch(() => ({}))) as {
