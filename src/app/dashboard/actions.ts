@@ -15,6 +15,7 @@ import { handleInboundWhatsApp } from "@/lib/chatbot";
 import { stkPush } from "@/lib/daraja";
 import { platformCreds } from "@/lib/platform-billing";
 import { assignTenantToUnit } from "@/lib/leasing";
+import { normalizeKenyanPhone, validKenyanPhone } from "@/lib/phone";
 import { importUnitsCsv } from "@/lib/import";
 import { createInvite, revokeInvite } from "@/lib/invites";
 
@@ -76,6 +77,30 @@ export async function createTenantAndLease(formData: FormData) {
   revalidatePath(`/dashboard/properties/${unit.propertyId}`);
   revalidatePath("/dashboard/tenants");
   revalidatePath("/dashboard/messages");
+}
+
+// Edit a tenant's contact details (name / phone / email). Phone is the M-Pesa
+// number, so keep it normalized and valid.
+export async function updateTenant(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const landlord = await requireLandlord();
+  const tenantId = String(formData.get("tenantId") || "");
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+
+  const tenant = await prisma.tenant.findFirst({ where: { id: tenantId, landlordId: landlord.id } });
+  if (!tenant) return { error: "Tenant not found." };
+  if (!name) return { error: "Name is required." };
+
+  const phone = normalizeKenyanPhone(String(formData.get("phone") || ""));
+  if (!validKenyanPhone(phone)) return { error: "Enter a valid Kenyan phone number." };
+
+  await prisma.tenant.update({ where: { id: tenant.id }, data: { name, phone, email: email || null } });
+  revalidatePath("/dashboard/tenants");
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 // Bulk CSV import of units (and optional tenants) into a property.

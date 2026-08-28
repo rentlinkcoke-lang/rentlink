@@ -2,6 +2,7 @@ import { requireLandlord } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { kes } from "@/lib/format";
 import { Badge, PageHeader, EmptyState } from "../../ui";
+import EditTenantButton from "./EditTenantButton";
 
 export default async function TenantsPage() {
   const landlord = await requireLandlord();
@@ -27,7 +28,7 @@ export default async function TenantsPage() {
         <div className="card" style={{ overflowX: "auto" }}>
           <table className="data">
             <thead>
-              <tr><th>Tenant</th><th>Phone</th><th>Unit</th><th>Status</th><th style={{ textAlign: "right" }}>Balance</th></tr>
+              <tr><th>Tenant</th><th>Phone</th><th>Unit</th><th>Status</th><th style={{ textAlign: "right" }}>Balance</th><th></th></tr>
             </thead>
             <tbody>
               {tenants.map((t) => {
@@ -41,6 +42,9 @@ export default async function TenantsPage() {
                     <td>{active ? <Badge status="active" label="active" /> : <Badge status="slate" label="past" />}</td>
                     <td style={{ textAlign: "right" }} className="mono">
                       <span style={{ fontWeight: 600, color: balance > 0 ? "var(--red)" : "var(--ink-soft)" }}>{kes(balance)}</span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <EditTenantButton id={t.id} name={t.name} phone={t.phone} email={t.email} />
                     </td>
                   </tr>
                 );
