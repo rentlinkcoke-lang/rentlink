@@ -4,6 +4,7 @@ import { landlordDetail } from "@/lib/admin";
 import { kes, kesShort, periodLabel } from "@/lib/format";
 import { StatCard, PageHeader, StatusBadge } from "../../../ui";
 import { suspendLandlord, activateLandlord, setBillingStatus } from "../../actions";
+import EditLandlordButton from "./EditLandlordButton";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function AdminLandlordDetail({ params }: { params: Promise<
         action={
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <StatusBadge status={l.suspended ? "suspended" : l.billingStatus} />
+            <EditLandlordButton id={l.id} name={l.name} businessName={l.businessName} email={l.email} phone={l.phone} />
             <form action={l.suspended ? activateLandlord : suspendLandlord}>
               <input type="hidden" name="landlordId" value={l.id} />
               <button className="btn btn-ghost" style={{ fontSize: 13 }}>{l.suspended ? "Reactivate" : "Suspend"}</button>
