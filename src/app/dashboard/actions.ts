@@ -16,7 +16,7 @@ import { stkPush } from "@/lib/daraja";
 import { platformCreds } from "@/lib/platform-billing";
 import { assignTenantToUnit } from "@/lib/leasing";
 import { normalizeKenyanPhone, validKenyanPhone } from "@/lib/phone";
-import { importUnitsCsv } from "@/lib/import";
+import { planImport, commitImport } from "@/lib/import";
 import { createInvite, revokeInvite } from "@/lib/invites";
 
 function code(name: string): string {
@@ -103,17 +103,29 @@ export async function updateTenant(
   return { ok: true };
 }
 
-// Bulk CSV import of units (and optional tenants) into a property.
-export async function runImport(
-  _prev: unknown,
-  formData: FormData
-): Promise<{ ok?: boolean; error?: string; result?: import("@/lib/import").ImportResult }> {
+// Bulk import — phase 1: dry-run. Reads the file and returns a plan; writes
+// nothing. Rows that would touch an existing tenancy are flagged needsConfirm.
+export async function planImportAction(
+  propertyId: string,
+  csv: string
+): Promise<{ ok: true; plan: import("@/lib/import").ImportPlan } | { ok: false; error: string }> {
   const landlord = await requireLandlord();
-  const propertyId = String(formData.get("propertyId") || "");
-  const csv = String(formData.get("csv") || "");
-  if (!csv.trim()) return { error: "Upload an .xlsx file or paste some rows first." };
+  if (!csv.trim()) return { ok: false, error: "Upload an .xlsx file or paste some rows first." };
+  const plan = await planImport(landlord.id, propertyId || null, csv);
+  if (!plan.items.length) return { ok: false, error: "No rows found in that file." };
+  return { ok: true, plan };
+}
 
-  const result = await importUnitsCsv(landlord.id, propertyId || null, csv);
+// Bulk import — phase 2: commit. New units/tenants always apply; rows that
+// change an existing tenancy apply only if their line is in confirmedLines.
+export async function commitImportAction(
+  propertyId: string,
+  csv: string,
+  confirmedLines: number[]
+): Promise<{ ok: true; result: import("@/lib/import").ImportResult } | { ok: false; error: string }> {
+  const landlord = await requireLandlord();
+  if (!csv.trim()) return { ok: false, error: "Nothing to import." };
+  const result = await commitImport(landlord.id, propertyId || null, csv, confirmedLines || []);
   if (propertyId) revalidatePath(`/dashboard/properties/${propertyId}`);
   revalidatePath("/dashboard/properties");
   revalidatePath("/dashboard/tenants");
