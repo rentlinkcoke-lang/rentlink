@@ -103,6 +103,29 @@ export async function updateTenant(
   return { ok: true };
 }
 
+// Edit a property's name / location. The code is deliberately NOT editable — it
+// prefixes every unit's M-Pesa payment reference, so changing it would break the
+// references already given to tenants.
+export async function updateProperty(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const landlord = await requireLandlord();
+  const propertyId = String(formData.get("propertyId") || "");
+  const name = String(formData.get("name") || "").trim();
+  const location = String(formData.get("location") || "").trim();
+
+  const property = await prisma.property.findFirst({ where: { id: propertyId, landlordId: landlord.id } });
+  if (!property) return { error: "Property not found." };
+  if (!name) return { error: "Property name is required." };
+
+  await prisma.property.update({ where: { id: property.id }, data: { name, location: location || null } });
+  revalidatePath("/dashboard/properties");
+  revalidatePath(`/dashboard/properties/${property.id}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 // Bulk import — phase 1: dry-run. Reads the file and returns a plan; writes
 // nothing. Rows that would touch an existing tenancy are flagged needsConfirm.
 export async function planImportAction(

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { kes } from "@/lib/format";
 import { PageHeader, EmptyState } from "../../ui";
 import { createProperty } from "../actions";
+import EditPropertyButton from "./EditPropertyButton";
 
 export default async function PropertiesPage() {
   const landlord = await requireLandlord();
@@ -49,23 +50,28 @@ export default async function PropertiesPage() {
             const occupied = p.units.filter((u) => u.leases.length > 0).length;
             const monthly = p.units.reduce((s, u) => (u.leases.length ? s + u.rent : s), 0);
             return (
-              <Link key={p.id} href={`/dashboard/properties/${p.id}`} className="card card-pad" style={{ display: "block" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div className="h2">{p.name}</div>
-                  <span className="badge badge-slate mono">{p.code}</span>
-                </div>
-                <div className="faint" style={{ fontSize: 13, marginTop: 2 }}>{p.location || "—"}</div>
-                <div style={{ display: "flex", gap: 20, marginTop: 16 }}>
-                  <div>
-                    <div className="stat-label">Units</div>
-                    <div style={{ fontWeight: 700, fontSize: 18 }}>{occupied}/{units}</div>
+              <div key={p.id} style={{ position: "relative" }}>
+                <Link href={`/dashboard/properties/${p.id}`} className="card card-pad" style={{ display: "block" }}>
+                  <div className="h2" style={{ paddingRight: 56 }}>{p.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                    <span className="badge badge-slate mono">{p.code}</span>
+                    <span className="faint" style={{ fontSize: 13 }}>{p.location || "—"}</span>
                   </div>
-                  <div>
-                    <div className="stat-label">Monthly roll</div>
-                    <div style={{ fontWeight: 700, fontSize: 18 }} className="mono">{kes(monthly)}</div>
+                  <div style={{ display: "flex", gap: 20, marginTop: 16 }}>
+                    <div>
+                      <div className="stat-label">Units</div>
+                      <div style={{ fontWeight: 700, fontSize: 18 }}>{occupied}/{units}</div>
+                    </div>
+                    <div>
+                      <div className="stat-label">Monthly roll</div>
+                      <div style={{ fontWeight: 700, fontSize: 18 }} className="mono">{kes(monthly)}</div>
+                    </div>
                   </div>
+                </Link>
+                <div style={{ position: "absolute", top: 14, right: 14, zIndex: 2 }}>
+                  <EditPropertyButton id={p.id} name={p.name} location={p.location} code={p.code} />
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
