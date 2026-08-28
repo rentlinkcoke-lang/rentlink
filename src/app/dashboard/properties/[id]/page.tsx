@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { kes } from "@/lib/format";
 import { Badge, PageHeader, EmptyState } from "../../../ui";
 import { createUnit, createTenantAndLease, addUtility, endLease, createInviteAction, revokeInviteAction } from "../../actions";
+import EditUnitButton from "./EditUnitButton";
 
 export default async function PropertyDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -119,6 +120,7 @@ export default async function PropertyDetail({ params }: { params: Promise<{ id:
 
                   {/* right: actions */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                    <EditUnitButton id={u.id} label={u.label} rent={u.rent} bedrooms={u.bedrooms} payRef={u.payRef} occupied={!!lease} />
                     {!lease ? (
                       <>
                         <details style={{ position: "relative" }}>

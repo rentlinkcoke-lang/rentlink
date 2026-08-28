@@ -61,6 +61,57 @@ export async function createUnit(formData: FormData) {
   revalidatePath(`/dashboard/properties/${propertyId}`);
 }
 
+// Edit a unit's label / rent / bedrooms. The M-Pesa reference (payRef) is left
+// unchanged even if the label changes — tenants already pay to that reference.
+export async function updateUnit(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const landlord = await requireLandlord();
+  const unitId = String(formData.get("unitId") || "");
+  const label = String(formData.get("label") || "").trim();
+  const rent = Math.round(Number(formData.get("rent")) || 0);
+  const bdRaw = formData.get("bedrooms");
+  const bedrooms = bdRaw !== null && String(bdRaw).trim() !== "" ? Math.round(Number(bdRaw)) : null;
+
+  const unit = await prisma.unit.findFirst({ where: { id: unitId, property: { landlordId: landlord.id } } });
+  if (!unit) return { error: "Unit not found." };
+  if (!label) return { error: "Unit label is required." };
+  if (rent <= 0) return { error: "Enter a valid rent." };
+  if (label !== unit.label) {
+    const clash = await prisma.unit.findFirst({ where: { propertyId: unit.propertyId, label, id: { not: unit.id } } });
+    if (clash) return { error: `Another unit is already labelled "${label}".` };
+  }
+
+  await prisma.unit.update({
+    where: { id: unit.id },
+    data: { label, rent, bedrooms: bedrooms !== null && bedrooms >= 0 ? bedrooms : null },
+  });
+  revalidatePath(`/dashboard/properties/${unit.propertyId}`);
+  revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// Guarded delete for a unit: blocked when it has an active tenant or recorded
+// M-Pesa payments; otherwise deletes (cascading its ended leases/invoices).
+export async function deleteUnit(unitId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const landlord = await requireLandlord();
+  const unit = await prisma.unit.findFirst({ where: { id: unitId, property: { landlordId: landlord.id } } });
+  if (!unit) return { ok: false, error: "Unit not found." };
+
+  const active = await prisma.lease.count({ where: { status: "active", unitId } });
+  if (active > 0) return { ok: false, error: "This unit has an active tenant. End the lease first, then delete it." };
+  const paid = await prisma.allocation.count({ where: { invoice: { lease: { unitId } } } });
+  if (paid > 0) return { ok: false, error: "This unit has recorded M-Pesa payments, so deleting it would remove that history from your reports. It can't be deleted." };
+
+  await prisma.unit.delete({ where: { id: unitId } });
+  revalidatePath(`/dashboard/properties/${unit.propertyId}`);
+  revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function createTenantAndLease(formData: FormData) {
   const landlord = await requireLandlord();
   const unitId = String(formData.get("unitId") || "");
