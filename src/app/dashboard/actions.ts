@@ -126,6 +126,52 @@ export async function updateProperty(
   return { ok: true };
 }
 
+// Guarded delete. A property can only be removed when it holds no active
+// tenancy and no recorded M-Pesa payments — deleting one with payment history
+// would pull those figures out of the landlord's reports. Blocked cases return
+// a message; a clean delete cascades the property's units/leases/invoices.
+export async function deleteProperty(propertyId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const landlord = await requireLandlord();
+  const property = await prisma.property.findFirst({ where: { id: propertyId, landlordId: landlord.id } });
+  if (!property) return { ok: false, error: "Property not found." };
+
+  const activeLeases = await prisma.lease.count({ where: { status: "active", unit: { propertyId } } });
+  if (activeLeases > 0) {
+    return { ok: false, error: "This property has active tenants. End their leases first, then delete it." };
+  }
+  const paid = await prisma.allocation.count({ where: { invoice: { lease: { unit: { propertyId } } } } });
+  if (paid > 0) {
+    return { ok: false, error: "This property has recorded M-Pesa payments, so deleting it would remove that history from your reports. It can't be deleted." };
+  }
+
+  await prisma.property.delete({ where: { id: propertyId } });
+  revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// Same guard for a tenant: removable only with no active lease and no payments.
+// A clean delete cascades their (ended) leases and unpaid invoices.
+export async function deleteTenant(tenantId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const landlord = await requireLandlord();
+  const tenant = await prisma.tenant.findFirst({ where: { id: tenantId, landlordId: landlord.id } });
+  if (!tenant) return { ok: false, error: "Tenant not found." };
+
+  const activeLeases = await prisma.lease.count({ where: { status: "active", tenantId } });
+  if (activeLeases > 0) {
+    return { ok: false, error: "This tenant has an active lease. Vacate them from their unit first, then delete." };
+  }
+  const paid = await prisma.allocation.count({ where: { invoice: { lease: { tenantId } } } });
+  if (paid > 0) {
+    return { ok: false, error: "This tenant has recorded M-Pesa payments, so deleting them would remove that history from your reports. They can't be deleted." };
+  }
+
+  await prisma.tenant.delete({ where: { id: tenantId } });
+  revalidatePath("/dashboard/tenants");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 // Bulk import — phase 1: dry-run. Reads the file and returns a plan; writes
 // nothing. Rows that would touch an existing tenancy are flagged needsConfirm.
 export async function planImportAction(
