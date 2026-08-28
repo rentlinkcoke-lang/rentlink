@@ -86,11 +86,11 @@ export async function runImport(
   const landlord = await requireLandlord();
   const propertyId = String(formData.get("propertyId") || "");
   const csv = String(formData.get("csv") || "");
-  if (!propertyId) return { error: "Choose a property to import into." };
-  if (!csv.trim()) return { error: "Paste some CSV rows first." };
+  if (!csv.trim()) return { error: "Upload an .xlsx file or paste some rows first." };
 
-  const result = await importUnitsCsv(landlord.id, propertyId, csv);
-  revalidatePath(`/dashboard/properties/${propertyId}`);
+  const result = await importUnitsCsv(landlord.id, propertyId || null, csv);
+  if (propertyId) revalidatePath(`/dashboard/properties/${propertyId}`);
+  revalidatePath("/dashboard/properties");
   revalidatePath("/dashboard/tenants");
   revalidatePath("/dashboard");
   return { ok: true, result };
