@@ -41,8 +41,11 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   if (!landlord || !(await verifyPassword(password, landlord.passwordHash))) {
     return { error: "Wrong email or password." };
   }
+  if (landlord.suspended) {
+    return { error: "This account is suspended. Contact RentLink support." };
+  }
   await createSession(landlord.id);
-  redirect("/dashboard");
+  redirect(landlord.isSuperAdmin ? "/admin" : "/dashboard");
 }
 
 export async function logoutAction() {

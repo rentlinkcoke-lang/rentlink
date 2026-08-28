@@ -5,10 +5,27 @@ import { prisma } from "@/lib/prisma";
 import { billingSummary } from "@/lib/platform-billing";
 import { kes } from "@/lib/format";
 import Sidebar from "./Sidebar";
+import { logoutAction } from "../auth-actions";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const landlord = await getCurrentLandlord();
   if (!landlord) redirect("/login");
+  if (landlord.suspended) {
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+        <div className="card card-pad" style={{ maxWidth: 440, textAlign: "center", padding: 32 }}>
+          <div style={{ fontSize: 34 }}>🔒</div>
+          <h1 className="h1" style={{ fontSize: 20, marginTop: 8 }}>Account suspended</h1>
+          <p className="muted" style={{ fontSize: 14, marginTop: 8 }}>
+            Your RentLink account has been suspended. Please contact support to restore access.
+          </p>
+          <form action={logoutAction} style={{ marginTop: 18 }}>
+            <button className="btn btn-ghost">Log out</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   const unmatched = await prisma.payment.count({
     where: { landlordId: landlord.id, status: "unmatched" },

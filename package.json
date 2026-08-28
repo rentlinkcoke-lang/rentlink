@@ -9,7 +9,8 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "node scripts/seed.mjs",
-    "db:reset": "prisma db push --force-reset && node scripts/seed.mjs"
+    "db:reset": "prisma db push --force-reset && node scripts/seed.mjs",
+    "make-admin": "node --env-file=.env scripts/set-super-admin.mjs"
   },
   "dependencies": {
     "next": "^16.0.0",

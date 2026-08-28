@@ -39,6 +39,9 @@ model Landlord {
   // Keja's own subscription billing (per-unit SaaS fee).
   billingStatus        String    @default("trialing") // trialing | active | past_due | canceled
   trialEndsAt          DateTime?
+  // Platform super-admin (oversees all landlords via /admin). Suspend locks a landlord out.
+  isSuperAdmin         Boolean   @default(false)
+  suspended            Boolean   @default(false)
   createdAt    DateTime   @default(now())
 
   stkRequests      StkRequest[]

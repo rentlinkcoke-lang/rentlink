@@ -40,6 +40,14 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
+// Platform subscription status pill (super-admin console).
+export function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = { active: "green", trialing: "slate", past_due: "amber", canceled: "slate", suspended: "red" };
+  const labels: Record<string, string> = { active: "Active", trialing: "Trial", past_due: "Past due", canceled: "Canceled", suspended: "Suspended" };
+  const c = map[status] || "slate";
+  return <span className={`badge badge-${c}`}>{labels[status] || status}</span>;
+}
+
 export function PageHeader({
   title,
   subtitle,
