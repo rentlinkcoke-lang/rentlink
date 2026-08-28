@@ -7,6 +7,9 @@ import { kes } from "@/lib/format";
 import Sidebar from "./Sidebar";
 import { logoutAction } from "../auth-actions";
 
+// Private app — keep it out of search indexes.
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const landlord = await getCurrentLandlord();
   if (!landlord) redirect("/login");

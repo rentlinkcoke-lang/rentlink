@@ -1,6 +1,9 @@
 import { requireSuperAdmin } from "@/lib/admin";
 import AdminSidebar from "./AdminSidebar";
 
+// Private admin console — never index.
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const me = await requireSuperAdmin();
   return (

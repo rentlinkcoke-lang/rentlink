@@ -8,6 +8,7 @@ export default async function Landing() {
 
   return (
     <div style={{ minHeight: "100vh" }}>
+      <JsonLd />
       {/* nav */}
       <header
         style={{
@@ -80,10 +81,59 @@ export default async function Landing() {
 
       <footer style={{ borderTop: "1px solid var(--border)", padding: "24px" }}>
         <div className="faint" style={{ maxWidth: 1120, margin: "0 auto", fontSize: 13 }}>
-          RentLink · property management for Kenya · demo build
+          RentLink · property management for Kenya · rent that reconciles itself
         </div>
       </footer>
     </div>
+  );
+}
+
+function JsonLd() {
+  const SITE = "https://rentlink.co.ke";
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SITE}/#organization`,
+        name: "RentLink",
+        url: SITE,
+        logo: `${SITE}/icon`,
+        description: "Property management software for the Kenyan market, built around M-Pesa auto-reconciliation.",
+        areaServed: { "@type": "Country", name: "Kenya" },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE}/#website`,
+        url: SITE,
+        name: "RentLink",
+        publisher: { "@id": `${SITE}/#organization` },
+        inLanguage: "en-KE",
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: "RentLink",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web",
+        url: SITE,
+        description:
+          "Give every unit its own M-Pesa reference so rent reconciles itself and WhatsApp receipts send automatically.",
+        offers: {
+          "@type": "Offer",
+          price: "75",
+          priceCurrency: "KES",
+          description: "Per unit, per month. No setup fee.",
+        },
+        areaServed: { "@type": "Country", name: "Kenya" },
+        publisher: { "@id": `${SITE}/#organization` },
+      },
+    ],
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
   );
 }
 
