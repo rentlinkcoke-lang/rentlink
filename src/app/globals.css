@@ -130,3 +130,8 @@ table.data tr.row-link:hover td { background: var(--bg); }
   cursor: pointer; color: var(--ink); flex-shrink: 0;
 }
 .rl-burger:active { background: var(--bg); }
+
+/* landing "get the app" band → stack on phones */
+@media (max-width: 720px) {
+  .app-band { grid-template-columns: 1fr !important; padding: 28px 22px !important; }
+}

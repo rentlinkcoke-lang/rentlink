@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSessionLandlordId } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import InstallApp from "./InstallApp";
 
 export default async function Landing() {
   const session = await getSessionLandlordId();
@@ -76,6 +77,61 @@ export default async function Landing() {
               <div className="muted" style={{ marginTop: 8, fontSize: 14, lineHeight: 1.5 }}>{d}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* get the app */}
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: "8px 24px 72px" }}>
+        <div
+          style={{
+            borderRadius: 20,
+            overflow: "hidden",
+            background: "linear-gradient(150deg,#0f3d24 0%,#0a2c1b 62%,#08251a 100%)",
+            display: "grid",
+            gridTemplateColumns: "1.3fr 1fr",
+            gap: 24,
+            alignItems: "center",
+            padding: "40px 40px",
+          }}
+          className="app-band"
+        >
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <span style={{ width: 46, height: 46, borderRadius: 12, background: "#1f9d4d", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 24 }}>⌂</span>
+              <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
+                <span style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>RentLink</span>
+                <span style={{ color: "#9fb7a8", fontSize: 13 }}>Property manager · Android</span>
+              </div>
+            </div>
+            <h2 style={{ color: "#fff", fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 12px", lineHeight: 1.1 }}>
+              Manage rent from your pocket.
+            </h2>
+            <p style={{ color: "#9fb7a8", fontSize: 16, lineHeight: 1.5, margin: "0 0 22px", maxWidth: 460 }}>
+              Install RentLink on your phone — reconcile payments, chase arrears and send receipts
+              on the go. Free, and it works like a normal app.
+            </p>
+            <InstallApp />
+          </div>
+
+          {/* feature pills */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignContent: "center" }}>
+            {["Auto-reconcile rent", "See arrears live", "WhatsApp receipts", "Works offline-aware"].map((f) => (
+              <span
+                key={f}
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#d7ecdd",
+                  borderRadius: 999,
+                  padding: "9px 15px",
+                  fontSize: 14,
+                  fontWeight: 500,
+                }}
+              >
+                {f}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
