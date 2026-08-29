@@ -38,7 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <Sidebar name={landlord.name} business={landlord.businessName || "Landlord"} unmatched={unmatched} />
-      <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", maxWidth: 1180 }}>
+      <main className="rl-main">
         {billing.dueNow && billing.openInvoice && (
           <Link
             href="/dashboard/billing"
