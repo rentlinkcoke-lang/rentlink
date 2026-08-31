@@ -57,7 +57,24 @@ Params: name · property+unit · balance · paybill · account ref · business
 If you name your templates differently, set the names in `.env`:
 `WHATSAPP_TEMPLATE_RECEIPT`, `WHATSAPP_TEMPLATE_INVOICE`, `WHATSAPP_TEMPLATE_REMINDER`.
 
-## 3. Turn it on
+## 3. Register the webhook
+
+In the Meta app dashboard → **WhatsApp → Configuration → Webhook → Edit**:
+
+```
+Callback URL   https://rentlink.co.ke/api/whatsapp/webhook
+Verify token   rentlink-wa-2026        (must equal WHATSAPP_VERIFY_TOKEN in Vercel)
+```
+
+Set `WHATSAPP_VERIFY_TOKEN` in the deploy env **before** clicking "Verify and save",
+or the handshake fails. Then subscribe to the **`messages`** field — that powers the
+pay-in-chat bot (`GET`/`POST` handled by `src/app/api/whatsapp/webhook/route.ts`).
+
+Tip: with Meta's **test number** you can send the approved templates to up to 5
+verified recipient numbers *before* business verification finishes — enough to test
+the whole pipeline end-to-end.
+
+## 4. Turn it on
 
 Once the templates are **approved** and the credentials are set, open
 **Settings → Notify tenants on** and tick **WhatsApp**. RentLink will start sending
