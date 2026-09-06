@@ -41,7 +41,7 @@ export default async function AdminLandlordDetail({ params }: { params: Promise<
         <StatCard label="Occupancy" value={`${counts.occupancy}%`} sub={`${counts.activeLeases} of ${counts.units} let`} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14, marginTop: 14 }}>
         <div className="card card-pad">
           <div className="stat-label">Portfolio</div>
           <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
@@ -78,6 +78,7 @@ export default async function AdminLandlordDetail({ params }: { params: Promise<
         <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
           <div className="h2">Platform invoices</div>
         </div>
+        <div style={{ overflowX: "auto" }}>
         <table className="data">
           <thead>
             <tr><th>Period</th><th>Units</th><th>Rate</th><th>Status</th><th style={{ textAlign: "right" }}>Amount</th></tr>
@@ -97,6 +98,7 @@ export default async function AdminLandlordDetail({ params }: { params: Promise<
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

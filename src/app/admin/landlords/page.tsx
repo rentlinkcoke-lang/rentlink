@@ -14,7 +14,7 @@ export default async function AdminLandlords() {
     <div>
       <PageHeader title="Landlords" subtitle={`${rows.length} account${rows.length === 1 ? "" : "s"} · ${kes(totalMrr)} MRR`} />
 
-      <div className="card">
+      <div className="card" style={{ overflowX: "auto" }}>
         <table className="data">
           <thead>
             <tr>

@@ -20,7 +20,7 @@ export default async function AdminOverview() {
         <StatCard label="Platform arrears" value={kesShort(o.arrears)} sub="open tenant invoices" accent={o.arrears > 0 ? "amber" : undefined} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 14, marginTop: 14 }}>
         <div className="card card-pad">
           <div className="stat-label">Subscription mix</div>
           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
@@ -41,7 +41,7 @@ export default async function AdminOverview() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 14 }}>
+      <div className="card" style={{ marginTop: 14, overflowX: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
           <div className="h2">Top landlords by MRR</div>
           <Link href="/admin/landlords" className="faint" style={{ fontSize: 13 }}>View all →</Link>
