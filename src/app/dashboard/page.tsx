@@ -6,6 +6,8 @@ import { sweepOverdue } from "@/lib/invoices";
 import { kes, kesShort, periodLabel, timeAgo } from "@/lib/format";
 import { StatCard, Badge, PageHeader, EmptyState } from "../ui";
 import { runBilling } from "./actions";
+import { onboardingState } from "@/lib/onboarding";
+import OnboardingCard from "./OnboardingCard";
 
 export default async function Overview() {
   const landlord = await requireLandlord();
@@ -25,6 +27,7 @@ export default async function Overview() {
   });
 
   const noData = stats.totalUnits === 0;
+  const onb = await onboardingState(landlord.id);
 
   return (
     <div>
@@ -40,17 +43,9 @@ export default async function Overview() {
         }
       />
 
-      {noData ? (
-        <div className="card">
-          <EmptyState
-            title="Let's set up your first property"
-            hint="Add a property and its units, then a tenant — RentLink gives every unit an M-Pesa reference and reconciles rent automatically."
-          />
-          <div style={{ textAlign: "center", paddingBottom: 32 }}>
-            <Link href="/dashboard/properties" className="btn btn-primary">Add a property →</Link>
-          </div>
-        </div>
-      ) : (
+      {(!onb.complete || onb.hasSample) && <OnboardingCard state={onb} />}
+
+      {!noData && (
         <>
           {/* KPI row */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>

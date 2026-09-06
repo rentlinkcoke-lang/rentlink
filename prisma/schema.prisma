@@ -60,6 +60,7 @@ model Property {
   // Short code used as the prefix of every unit's payment reference, e.g. "BLOOM".
   code        String
   location    String?
+  isSample    Boolean  @default(false) // seeded demo data, removable in one click
   createdAt   DateTime @default(now())
 
   units       Unit[]
@@ -109,6 +110,7 @@ model Tenant {
   name       String
   phone      String   // M-Pesa number, format 2547XXXXXXXX
   email      String?
+  isSample   Boolean  @default(false)
   createdAt  DateTime @default(now())
 
   leases     Lease[]
@@ -163,6 +165,7 @@ model Payment {
   status       String   @default("unmatched") // matched | partial | unmatched
   raw          String?  // raw webhook JSON for audit
   receivedAt   DateTime @default(now())
+  isSample     Boolean  @default(false)
 
   allocations  Allocation[]
 

@@ -18,6 +18,30 @@ import { assignTenantToUnit } from "@/lib/leasing";
 import { normalizeKenyanPhone, validKenyanPhone } from "@/lib/phone";
 import { planImport, commitImport } from "@/lib/import";
 import { createInvite, revokeInvite } from "@/lib/invites";
+import { seedSampleData, clearSampleData } from "@/lib/sample-data";
+
+// Fill an empty account with a demo property, tenants and a reconciled payment.
+export async function seedSampleAction(): Promise<{ ok: boolean; error?: string }> {
+  const landlord = await requireLandlord();
+  const res = await seedSampleData(landlord.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard/tenants");
+  revalidatePath("/dashboard/payments");
+  return res;
+}
+
+// Remove all sample data, leaving the account clean.
+export async function clearSampleAction(): Promise<{ ok: boolean }> {
+  const landlord = await requireLandlord();
+  const res = await clearSampleData(landlord.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard/tenants");
+  revalidatePath("/dashboard/payments");
+  revalidatePath("/dashboard/messages");
+  return res;
+}
 
 function code(name: string): string {
   return name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8) || "PROP";
