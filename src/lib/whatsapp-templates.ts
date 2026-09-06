@@ -38,7 +38,7 @@ export function waReceipt(args: {
   return {
     templateName: process.env.WHATSAPP_TEMPLATE_RECEIPT || "rent_receipt",
     params,
-    preview: `Hi ${first}, we have received your rent payment of ${money(args.amount)} for ${unit}, ${args.period}.\n${balLine}\nThis receipt was sent by ${args.business} through RentLink.`,
+    preview: `Hi ${first}, we have received your rent payment of ${money(args.amount)} for ${unit}, relating to ${args.period}.\n${balLine}\nThis receipt was sent by ${args.business} through RentLink.`,
   };
 }
 
