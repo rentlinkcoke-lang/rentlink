@@ -220,6 +220,13 @@ export async function reconcilePayment(input: IncomingPayment): Promise<Reconcil
     });
   }
 
+  // The month(s) this payment settled — rent invoices first, else any allocated.
+  const rentPeriods = [...new Set(allocatedSummary.filter((a) => a.type === "rent").map((a) => a.period))];
+  const allPeriods = [...new Set(allocatedSummary.map((a) => a.period))];
+  const periodText =
+    (rentPeriods.length ? rentPeriods : allPeriods).join(", ") ||
+    periodLabel(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1);
+
   // WhatsApp receipt (template message).
   if (landlord?.whatsappOn) {
     const wa = waReceipt({
@@ -227,6 +234,7 @@ export async function reconcilePayment(input: IncomingPayment): Promise<Reconcil
       propertyName: unit.property.name,
       unitLabel: unit.label,
       amount: input.amount,
+      period: periodText,
       balance,
       mpesaCode: input.mpesaCode,
       business,
